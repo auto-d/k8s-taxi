@@ -27,6 +27,14 @@ COPY week2/backend/ .
 COPY week2/metadata /metadata
 RUN mkdir -p /data/processed /app/frontend/public
 
+# Copy missing dependencies to image so the app can launch!
+# NOTE: Used gpt-5.4-codex to trace the dynamic path construction in the container
+# so these could be stashed in the right places. 
+COPY week2/data/demand_enriched.parquet /data/processed/demand_enriched.parquet
+COPY week2/model/lgbm_demand_model.txt /data/processed/lgbm_demand_model.txt
+COPY week2/backend/zone_hour_avg_fare.parquet /data/processed/zone_hour_avg_fare.parquet
+COPY week2/backend/taxi_zones.geojson /app/frontend/public/taxi_zones.geojson
+
 # Health check: Kubernetes will call this periodically
 # Goal: verify model is loaded and can handle requests
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
