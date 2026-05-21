@@ -147,4 +147,28 @@
     - updated all entries 
   
   - PART 3: 
-    - <RESUME HERE>
+    - test docker build ... done
+      - missing dependencies, need to be copied in - amended dockerfile 
+    - deploy to k8s... success (3 pods because we have replicas = 3)
+      ```
+      % kubectl get pods
+      NAME                          READY   STATUS     RESTARTS   AGE
+      demand-api-7d665fc9cf-26stl   0/1     Init:0/1   0          44s
+      demand-api-7d665fc9cf-vjdkm   0/1     Init:0/1   0          44s
+      demand-api-7d665fc9cf-wkrwq   0/1     Init:0/1   0          44s
+      ```
+    - test curl request to external IP fails... 
+      - inspect logs 
+      ```
+      % kubectl logs deployment/demand-api --tail=50
+      Found 3 pods, using pod/demand-api-7d665fc9cf-26stl
+      Error from server (BadRequest): container "demand-api" in pod "demand-api-7d665fc9cf-26stl" is waiting to start: trying and failing to pull image
+      ```
+        - hmm... where did we upload the image to the registry? we couldn't have if the build was failing. oh it's a CI step, which we haven't run yet and doesn't show up in the instructions until later. 
+  - PART 4 
+    - CI/CD won't be picked up in its current location -> copy to root of repo
+    - build works, deploy doesn't 
+      - our startup time wasn't conservative enough 
+    - Serving works, but the model appears to fail to load: `[NYC Cab Analytics] Error loading LightGBM model: _Map_base::at`
+      - vomits on load of txt model -- 
+      - upgrade lightgbm package ftw
