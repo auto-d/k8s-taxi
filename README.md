@@ -5,7 +5,7 @@ This repository contains a cloned and modified `week2` tree from the [class repo
 # Deliverables
 
 1. This Github [repo](https://github.com/auto-d/k8s-taxi)
-2. [Architecture diagram](docs/architecture.md)
-3. [Screenshots](docs/screenshots.md)
-4. [Report](docs/report.md)
+2. [Architecture diagram](submission/architecture.pdf)
+3. [Screenshots](submission/screenshots.pdf)
+4. [Report](submission/report.pdf)
 
