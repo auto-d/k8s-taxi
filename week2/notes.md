@@ -172,3 +172,12 @@
     - Serving works, but the model appears to fail to load: `[NYC Cab Analytics] Error loading LightGBM model: _Map_base::at`
       - vomits on load of txt model -- 
       - upgrade lightgbm package ftw
+  - PART 5
+    - `gcloud container clusters delete operationalizing-ai \
+  --zone us-central1-a \
+  --project ops-ai-jason-m`
+    - `gcloud container clusters list --project ops-ai-jason-m`
+    - `gcloud artifacts repositories delete docker-repo \
+  --location=us-central1 \
+  --project ops-ai-jason-m`
+  - `gsutil ls gs://ops-ai-jason-m-data/`

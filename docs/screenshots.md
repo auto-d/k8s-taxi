@@ -1,8 +1,8 @@
-1. API health check: `curl http://$EXTERNAL_IP/health` returning {"status":"ok"}:
+1. API health check:
 
     ![alt text](health.png)
 
-2. kubectl showing pods running and external IP assigned
+2. kubectl showing pods running and external IP assigned:
 
     ![alt text](pods.png)
 
@@ -10,4 +10,6 @@
 
     ![alt text](forecast.png)
 
-4. GKE cluster deletion confirmation
+4. GKE cluster deletion confirmation:
+
+    ![alt text](deletion.png)
