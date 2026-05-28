@@ -8,7 +8,7 @@ Modify or replace as needed based on the issues you identify.
 import pandas as pd
 import numpy as np
 from typing import Dict, List
-
+import sys 
 
 class DataQualityValidator:
     """Validates data against quality expectations."""
@@ -147,7 +147,19 @@ def main():
     dqv = DataQualityValidator(old)
     issues = dqv.validate(new)
 
-    print(issues)
+    if 0 != len(issues): 
+
+        print(f"{'TYPE':<10}{'SEVERITY':<10}{'COUNT':<10}{'DESCRIPTION':<10}")
+        for issue in issues: 
+            print(f"{issue['type']:<10}{issue['severity']:<10}{issue['count']:<10}{issue['description']:<10}")
+        
+        return 1
+
+    return 0 
 
 if __name__ == "__main__":
-    main()
+
+    # NOTE: sys.exit incantation from chatGPT consult: 
+    # - prompt: "what is the right way to return an exit code in a python script?"
+    # - model: chatGPT-5.5, 28 May 2026
+    sys.exit(main()) 
