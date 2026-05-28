@@ -13,80 +13,93 @@ from typing import Dict, List
 class DataQualityValidator:
     """Validates data against quality expectations."""
 
-    def __init__(self, baseline_df: pd.DataFrame = None):
+    def __init__(self, baseline: pd.DataFrame = None):
         """
         Initialize validator.
 
         Args:
             baseline_df: Clean reference data for comparison
         """
-        self.baseline = baseline_df
+        self.baseline = baseline
+
+    def validate(self, df: pd.DataFrame) -> list:
+        """Check data quality. Return a list of issues."""
+        
         self.issues = []
+                
+        if type(self.baseline) != pd.DataFrame:
+            raise ValueError("Baseline dataframe is required to enable validation!")
 
-    def validate(self, df: pd.DataFrame) -> Dict:
-        """
-        Run all validation checks.
-
-        Returns:
-            Dictionary with:
-            - is_valid: boolean
-            - num_issues: count of issues found
-            - issues: list of issue details
-        """
-        self.issues = []
-
-        # TODO: Add your validation checks here
-        # Example structure:
-        # self.check_null_rates(df)
-        # self.check_value_ranges(df)
-        # self.check_duplicates(df)
-        # etc.
-
-        return {
-            "is_valid": len(self.issues) == 0,
-            "num_issues": len(self.issues),
-            "issues": self.issues,
-        }
-
-    def check_null_rates(self, df: pd.DataFrame):
-        """Check if any column has excessive nulls."""
-        # TODO: Implement
-        # What threshold is acceptable? (depends on your data)
-        # Which columns are critical (can't have any nulls)?
-        pass
-
-    def check_value_ranges(self, df: pd.DataFrame):
-        """Check if values fall within expected ranges."""
-        # TODO: Implement
-        # Examples:
-        # - trip_count should be >= 0
-        # - hour should be 0-23
-        # - dayofweek should be 0-6
-        # - zone IDs should be valid
-        pass
-
-    def check_distributions(self, df: pd.DataFrame):
-        """Check if data distribution matches baseline."""
-        # TODO: Implement
-        # Examples:
-        # - Outlier detection (values >N sigma from mean)
-        # - Median/mean comparison to baseline
-        # - Quantile comparisons
-        pass
+        self.check_duplicates(df)
+        self.check_schema(df)
+        self.check_value_ranges(df)
+        self.check_null_rates(df) 
+        
+        return self.issues
 
     def check_duplicates(self, df: pd.DataFrame):
         """Check for duplicate rows."""
-        # TODO: Implement
-        # What counts as a duplicate? All columns or key columns only?
-        pass
+                
+        duplicated_rows = df.duplicated().value_counts()[1]
+        if duplicated_rows > 0: 
+            self._add_issue("Duplicate", "Minor", f"Detected duplicate rows", duplicated_rows)
+
+        if not df.index.is_unique: 
+            duplicated_ixs = len(df) - len(df.index.unique())        
+            self._add_issue("Duplicate", "Minor", f"Detected duplicate indices", duplicated_ixs)
 
     def check_schema(self, df: pd.DataFrame):
         """Check that required columns exist with correct types."""
-        # TODO: Implement
-        # What columns are required?
-        # What types should they be?
+        
+        base_cols = set(self.baseline.columns)
+        new_cols = set(df.columns)
+
+        int_cols = base_cols.intersection(new_cols)
+        if not int_cols == base_cols:
+            self._add_issue("Schema", "Major", f"New data has missing features", len(base_cols) - len(int_cols))
+        
+        diff_cols = base_cols.difference(new_cols)
+        if len(diff_cols) > 0:
+            self._add_issue("Schema", "Moderate", f"Detected schema drift", len(diff_cols))
+
+    def check_value_ranges(self, df: pd.DataFrame):
+        """Check if values fall within expected ranges."""
+        
+        b_stats = self.baseline.describe()
+        key_numeric_cols = [ 
+            "trip_count", 
+            "hour", 
+            "minute", 
+            "month", 
+            "year",
+        ]
+
+        n_stats = df.describe()
+
+        for col in key_numeric_cols: 
+            
+            if not hasattr(n_stats, col): 
+                self._add_issue("Schema", "Major", f"Missing key column: {col}", 1)
+                continue
+
+            min = b_stats[col]['min']
+            if n_stats[col]['min'] < min:                 
+                self._add_issue("Schema", "Minor", f"Minimum for {col} below baseline data", 0)
+
+            max = b_stats[col]['max']
+            if n_stats[col]['max'] < max:                 
+                self._add_issue("Schema", "Minor", f"Maximum for {col} above baseline data", 0)                                              
+
         pass
 
+    def check_null_rates(self, df: pd.DataFrame):
+        """Check if any column has excessive nulls."""
+        
+        # NOTE: syntax to get the iterable here from sum() courtesy of gpt-5.4-codex on 28 May
+        for col, count in df.isna().sum().items(): 
+            if count != 0: 
+                self._add_issue("Missing", "Moderate", f"Missing values for column {col}", count)
+    
     def _add_issue(
         self,
         issue_type: str,
@@ -131,3 +144,33 @@ def detect_outliers(
     """
     # TODO: Implement outlier detection
     pass
+
+def load_data(path, cutoff): 
+    """
+    Load and split our artificial dataset here into baseline and 'new' 
+    (corrupted) rows to demonstrate how validation would work on a 
+    schedule (or on a commit hook) for arriving data. 
+    """
+    df = pd.read_parquet(path)
+    old = df[df['time_bucket'] < cutoff] 
+    new = df[df['time_bucket'] >= cutoff]
+
+    print(f"Baseline: {len(old)} rows")
+    print(f"New: {len(new)} rows")
+
+    return old, new
+
+def main(): 
+    """
+    CLI entrypoint for use w/ github actions (see validate-data.yml)
+    """
+    data_path = "data/demand_enriched_corrupted.parquet"
+    CUTOFF = pd.Timestamp("2026-01-16")
+
+    df_old, df_new = load_data(data_path, CUTOFF)
+
+    dqv = DataQualityValidator(df_old)
+    dqv.validate(df_new)
+
+if __name__ == "__main__":
+    main()
