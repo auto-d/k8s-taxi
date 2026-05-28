@@ -40,7 +40,7 @@ class DataQualityValidator:
     def check_duplicates(self, df: pd.DataFrame):
         """Check for duplicate rows."""
                 
-        duplicated_rows = df.duplicated().value_counts()[1]
+        duplicated_rows = df.duplicated().value_counts().sum()
         if duplicated_rows > 0: 
             self._add_issue("Duplicate", "Minor", f"Detected duplicate rows", duplicated_rows)
 
@@ -87,7 +87,7 @@ class DataQualityValidator:
                 self._add_issue("Schema", "Minor", f"Minimum for {col} below baseline data", 0)
 
             max = b_stats[col]['max']
-            if n_stats[col]['max'] < max:                 
+            if n_stats[col]['max'] > max:                 
                 self._add_issue("Schema", "Minor", f"Maximum for {col} above baseline data", 0)                                              
 
         pass
