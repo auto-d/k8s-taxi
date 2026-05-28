@@ -139,7 +139,7 @@ def main():
     """
     CLI entrypoint for use w/ github actions (see validate-data.yml)
     """
-    data_path = "week3/data/demand_enriched_corrupted.parquet"
+    data_path = "data/demand_enriched_corrupted.parquet"
     CUTOFF = pd.Timestamp("2026-01-16")
 
     old, new = load_data(data_path, CUTOFF)
