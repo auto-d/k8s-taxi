@@ -34,7 +34,7 @@ class DataQualityValidator:
         self.check_schema(df)
         self.check_value_ranges(df)
         self.check_null_rates(df) 
-        
+
         return self.issues
 
     def check_duplicates(self, df: pd.DataFrame):
@@ -95,7 +95,9 @@ class DataQualityValidator:
     def check_null_rates(self, df: pd.DataFrame):
         """Check if any column has excessive nulls."""
         
-        # NOTE: syntax to get the iterable here from sum() courtesy of gpt-5.4-codex on 28 May
+        # NOTE: syntax to get the iterable here from sum() courtesy of chatGPT: 
+        #  - prompt: "eh, how do I iterate over the returned series (from sum())? no iterrows and treating as an iterable hides the index."
+        #  - model: gpt-5.4-codex,  28 May
         for col, count in df.isna().sum().items(): 
             if count != 0: 
                 self._add_issue("Missing", "Moderate", f"Missing values for column {col}", count)
@@ -117,33 +119,6 @@ class DataQualityValidator:
             **details,
         }
         self.issues.append(issue)
-
-
-# Optional: Utility functions
-
-
-def compare_distributions(
-    baseline: pd.Series, current: pd.Series, threshold: float = 2.0
-) -> bool:
-    """
-    Compare distributions using standard deviations.
-
-    Returns True if distributions are significantly different.
-    """
-    # TODO: Implement comparison logic
-    pass
-
-
-def detect_outliers(
-    series: pd.Series, baseline_series: pd.Series = None, sigma: float = 3.0
-) -> pd.Series:
-    """
-    Detect outliers in a numeric series.
-
-    Returns boolean Series indicating which values are outliers.
-    """
-    # TODO: Implement outlier detection
-    pass
 
 def load_data(path, cutoff): 
     """
@@ -167,10 +142,12 @@ def main():
     data_path = "data/demand_enriched_corrupted.parquet"
     CUTOFF = pd.Timestamp("2026-01-16")
 
-    df_old, df_new = load_data(data_path, CUTOFF)
+    old, new = load_data(data_path, CUTOFF)
 
-    dqv = DataQualityValidator(df_old)
-    dqv.validate(df_new)
+    dqv = DataQualityValidator(old)
+    issues = dqv.validate(new)
+
+    print(issues)
 
 if __name__ == "__main__":
     main()
