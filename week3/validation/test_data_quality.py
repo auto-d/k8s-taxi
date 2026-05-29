@@ -10,7 +10,6 @@ Write tests that:
 import pytest
 import pandas as pd
 import numpy as np
-from backend.data import configure_dataset, forecast_demand
 from validation.check_data_quality import load_data, print_issues, filter_issues, DataQualityValidator
 
 @pytest.fixture
@@ -48,25 +47,25 @@ class TestDataQualityIssues:
     """Tests that verify each issue is detected."""
 
     def test_detect_issue_1(self, corrupted_data, validator):
-        """Should detect schema issues."""
+        """Detects schema issues."""
         issues = validator.validate(corrupted_data)
         filtered = filter_issues(issues, ['Schema'])
         assert len(filtered)==0, f"Schema issues detected:\n{print_issues(issues)}"
 
     def test_detect_issue_2(self, corrupted_data, validator):
-        """Should detect range issues."""
+        """Detects range issues."""
         issues = validator.validate(corrupted_data)
         filtered = filter_issues(issues, ['Range'])
         assert len(filtered)==0, f"Range issues detected:\n{print_issues(issues)}"
 
     def test_detect_issue_3(self, corrupted_data, validator):
-        """Should detect duplicates."""
+        """Detects duplicates."""
         issues = validator.validate(corrupted_data)
         filtered = filter_issues(issues, ['Duplicate'])
         assert len(filtered)==0, f"Duplicates detected:\n{print_issues(issues)}"
 
     def test_detect_issue_4(self, corrupted_data, validator):
-        """Should detect missing values."""
+        """Detects missing values"""
         issues = validator.validate(corrupted_data)
         filtered = filter_issues(issues, ['Missing'])
         assert len(filtered)==0, f"Missing data detected:\n{print_issues(issues)}"
@@ -77,19 +76,20 @@ class TestGracefulDegradation:
 
     def test_api_does_not_crash_with_bad_data(self, corrupted_data):
         """API should continue running even with corrupted data."""
-        # All import and setup logic happens at the module scope, so is 
-        # executed on import above, we only need to run a forecast to see how it 
-        # behaves
+        # All import and setup logic happens at the module scope, so we import
+        # here to ensure logs happen in the context of the test
+        from backend.data import forecast_demand
+
+        print("Running demand forecast")
         demand = forecast_demand(12, 3, 5)
         print(demand)
 
     def test_fallback_is_logged(self, corrupted_data):
         """When graceful degradation happens, it should be logged."""
-        # The design of this data module is such that our data quality check
-        # happens on module initialization, which is prior to this function's 
-        # invocation ... we'll see data issues flagged when this test is 
-        # initialized, not on this function actually being called.
+        from backend.data import forecast_demand
+        
         demand = forecast_demand(134, 5,7)
+        print(demand)
 
 # ============================================================================
 # HOW TO RUN
