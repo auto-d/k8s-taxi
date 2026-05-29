@@ -1,6 +1,10 @@
 """
 Precomputes all demand aggregations from demand_enriched.parquet at startup.
-Keeps only ~44K rows in memory (zone × hour × dow profile), not 6.3M raw rows.
+
+Memory note: _profile keeps the compact aggregated demand profile
+(~25K zone/hour/day/holiday rows), but _full_demand also keeps the full
+~6.3M-row demand table when the LightGBM model loads so future forecasts can
+compute lag and rolling-window features.
 """
 
 import pandas as pd
@@ -13,7 +17,7 @@ import requests
 from functools import lru_cache
 
 _ROOT = Path(__file__).parent.parent.parent
-DATA_PATH = _ROOT / "week2" / "data" / "processed" / "demand_enriched.parquet"
+DATA_PATH = _ROOT / "week3" / "data" / "demand_enriched_corrupted.parquet"
 LOOKUP_PATH = _ROOT / "week2" / "metadata" / "Lookups" / "taxi_zone_lookup.csv"
 MODEL_PATH = _ROOT / "week2" / "data" / "processed" / "lgbm_demand_model.txt"
 
@@ -93,11 +97,56 @@ FEATURES = [
     "roll_mean_1day",
 ]
 
+import logging
+from validation.check_data_quality import DataQualityValidator, load_data
+
+logger = logging.getLogger(__name__)
+validator = None 
+
+def check_and_log_data_quality():
+    """
+    Run validation on incoming data and log any issues found.
+    The API continues running regardless of validation outcome.
+    Call this at startup so operators are immediately aware of data problems.
+    """
+    global validator 
+
+    try:
+        df = pd.read_parquet(DATA_PATH)
+        baseline, new = load_data()
+        validator = DataQualityValidator(baseline)
+        
+        issues = validator.validate(new)        
+        if 0 != len(issues): 
+            logger.warning(f"Data quality issues detected: {len(issues)} issue(s) found.")
+            
+            for issue in issues: 
+                logger.warning(f"  [{issue['severity'].upper()}] {issue['type']}: {issue['description']}")
+        else:
+            logger.info("Data quality check passed — no issues found.")
+            
+    except Exception as e:
+        logger.error(f"Data quality check failed to run: {e}")
+
+def _safe_load(path, columns=None): 
+    """
+    Read our dataset but ensure we tend to known data quality issues
+    """
+    df = pd.read_parquet(path, columns=columns) 
+
+    # Range 
+    df = df[df.trip_count >= 0]
+    df = df[df.trip_count <= validator.baseline.trip_count.max()]
+
+    # Duplicates 
+    df = df[~df.duplicated()]
+
+    return df
 
 def _load():
     print("[NYC Cab Analytics] Loading demand profile...")
-    df = pd.read_parquet(
-        DATA_PATH,
+    df = _safe_load(
+        path=DATA_PATH,
         columns=[
             "PULocationID",
             "hour",
@@ -179,11 +228,12 @@ def _load_model():
 def _load_full_demand():
     """Load full demand data for lag calculation."""
     print("[NYC Cab Analytics] Loading full demand data for forecasting...")
-    df = pd.read_parquet(DATA_PATH)
+    df = _safe_load(DATA_PATH)
     df["time_bucket"] = pd.to_datetime(df["time_bucket"])
     return df
 
 
+check_and_log_data_quality()
 _profile, _zones_df = _load()
 _zone_map = _zones_df.set_index("zone_id").to_dict("index")
 _lgbm_model = _load_model()

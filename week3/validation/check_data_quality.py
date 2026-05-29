@@ -40,7 +40,7 @@ class DataQualityValidator:
     def check_duplicates(self, df: pd.DataFrame):
         """Check for duplicate rows."""
                 
-        duplicated_rows = df.duplicated().value_counts().sum()
+        duplicated_rows = df.duplicated().sum()
         if duplicated_rows > 0: 
             self._add_issue("Duplicate", "Minor", f"Detected duplicate rows", duplicated_rows)
 
@@ -84,22 +84,40 @@ class DataQualityValidator:
 
             min = b_stats[col]['min']
             if n_stats[col]['min'] < min:                 
-                self._add_issue("Schema", "Minor", f"Minimum for {col} below baseline data", 0)
+                self._add_issue("Range", "Minor", f"Minimum for {col} below baseline data", 0)
 
             max = b_stats[col]['max']
             if n_stats[col]['max'] > max:                 
-                self._add_issue("Schema", "Minor", f"Maximum for {col} above baseline data", 0)                                              
-
-        pass
+                self._add_issue("Range", "Minor", f"Maximum for {col} above baseline data", 0)
 
     def check_null_rates(self, df: pd.DataFrame):
         """Check if any column has excessive nulls."""
         
+        key_columns = [
+            "PULocationID",
+            "time_bucket",
+            "trip_count",
+            "hour",
+            "minute",
+            "dayofweek",
+            "is_weekend",
+            "month",
+            "dayofyear",
+            "weekofyear",
+            "year",
+            "slot_of_day",
+            "is_holiday",
+            "cbd_pricing_active",
+            "borough_id",
+            "service_zone_id",
+            "is_airport_zone",
+            "zone_slot_baseline",
+            ]
         # NOTE: syntax to get the iterable here from sum() courtesy of chatGPT: 
         #  - prompt: "eh, how do I iterate over the returned series (from sum())? no iterrows and treating as an iterable hides the index."
         #  - model: gpt-5.4-codex,  28 May
         for col, count in df.isna().sum().items(): 
-            if count != 0: 
+            if col in key_columns and count != 0:
                 self._add_issue("Missing", "Moderate", f"Missing values for column {col}", count)
     
     def _add_issue(
@@ -120,39 +138,50 @@ class DataQualityValidator:
         }
         self.issues.append(issue)
 
-def load_data(path, cutoff): 
+def load_data(): 
     """
     Load and split our artificial dataset here into baseline and 'new' 
     (corrupted) rows to demonstrate how validation would work on a 
     schedule (or on a commit hook) for arriving data. 
     """
-    df = pd.read_parquet(path)
-    old = df[df['time_bucket'] < cutoff] 
-    new = df[df['time_bucket'] >= cutoff]
+    path = "data/demand_enriched_corrupted.parquet"
+    CUTOFF = pd.Timestamp("2026-01-16")
 
-    print(f"Baseline: {len(old)} rows")
-    print(f"New: {len(new)} rows")
+    df = pd.read_parquet(path)
+    old = df[df['time_bucket'] < CUTOFF] 
+    new = df[df['time_bucket'] >= CUTOFF]
 
     return old, new
+
+def filter_issues(issues, filter):
+    """Filter issue set down based on criteria"""
+    
+    filtered = []
+    for issue in issues: 
+        if issue['type'] in filter: 
+            filtered.append(issue)
+    return filtered 
+
+def print_issues(issues): 
+    """Pretty-print issues (if any)"""
+    
+    if len(issues) > 0: 
+        print(f"{'TYPE':<10}{'SEVERITY':<10}{'COUNT':<10}{'DESCRIPTION':<10}")
+        
+        for issue in issues: 
+            print(f"{issue['type']:<10}{issue['severity']:<10}{issue['count']:<10}{issue['description']:<10}")
 
 def main(): 
     """
     CLI entrypoint for use w/ github actions (see validate-data.yml)
     """
-    data_path = "data/demand_enriched_corrupted.parquet"
-    CUTOFF = pd.Timestamp("2026-01-16")
-
-    old, new = load_data(data_path, CUTOFF)
+    old, new = load_data()
 
     dqv = DataQualityValidator(old)
     issues = dqv.validate(new)
 
     if 0 != len(issues): 
-
-        print(f"{'TYPE':<10}{'SEVERITY':<10}{'COUNT':<10}{'DESCRIPTION':<10}")
-        for issue in issues: 
-            print(f"{issue['type']:<10}{issue['severity']:<10}{issue['count']:<10}{issue['description']:<10}")
-        
+        print_issues(issues)        
         return 1
 
     return 0 
