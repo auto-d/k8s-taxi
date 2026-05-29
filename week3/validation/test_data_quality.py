@@ -81,15 +81,20 @@ class TestGracefulDegradation:
         from backend.data import forecast_demand
 
         print("Running demand forecast")
-        demand = forecast_demand(12, 3, 5)
+        demand = forecast_demand(zone_id=132, hour=3, dow=5, num_steps=4)
         print(demand)
 
     def test_fallback_is_logged(self, corrupted_data):
         """When graceful degradation happens, it should be logged."""
-        from backend.data import forecast_demand
+        from backend.data import get_heatmap
         
-        demand = forecast_demand(134, 5,7)
-        print(demand)
+        # Because the above import brings the associated module in, and the 
+        # implementation has the data quality running globally, the data check 
+        # happens once on import, and logs will be suppressed for this test
+        # to see dedicated logs, run this test in isolatation
+        print("Running heatmap")
+        heatmap = get_heatmap(hour=9, dow=3)
+        print(heatmap)
 
 # ============================================================================
 # HOW TO RUN
