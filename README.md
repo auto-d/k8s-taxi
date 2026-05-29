@@ -5,5 +5,5 @@ This repository contains a cloned and modified `week3` tree from the [class repo
 # Deliverables
 
 1. This Github [repo](https://github.com/auto-d/k8s-taxi)
-4. [Report](submission/REPORT.pdf)
+2. [Report](submission/report.pdf)
 
