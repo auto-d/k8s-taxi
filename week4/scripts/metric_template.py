@@ -10,6 +10,7 @@ and return a dict (or float) that can be checked against your alert thresholds.
 import pandas as pd
 import numpy as np
 from scipy.stats import ks_2samp
+from sklearn.metrics import accuracy_score
 
 
 class MetricComputer:
@@ -24,20 +25,26 @@ class MetricComputer:
     ) -> float:
         """
         Metric 1: Overall Accuracy
-
-        TODO: Implement. Return fraction of correct predictions.
         """
-        pass
+        return accuracy_score(actuals, predictions) 
 
     def metric_2_accuracy_by_zone(
         self, new_df: pd.DataFrame, predictions: np.ndarray, actuals: np.ndarray
     ) -> dict:
         """
         Metric 2: Accuracy by Zone
-
-        TODO: Implement. Return dict mapping zone_id -> accuracy.
         """
-        pass
+        result = { }
+
+        df = new_df.copy()
+        df['actuals'] = actuals 
+        df['predictions'] = predictions
+
+        for zone in df.PULocationID.unique(): 
+            zone_df = df[df.PULocationID == zone]
+            result[str(zone)] = accuracy_score(zone_df.actuals, zone_df.predictions)
+
+        return result
 
     def metric_3_null_rates(self, new_df: pd.DataFrame) -> dict:
         """
@@ -45,7 +52,12 @@ class MetricComputer:
 
         TODO: Implement. Return dict of field -> null_rate for critical columns.
         """
-        pass
+        rates = new_df.is_na().mean()
+        results = {}
+        for rate in rates.items(): 
+            results[rate[0]] = rate[1]
+
+        return results
 
     def metric_4_ks_test(self, new_df: pd.DataFrame) -> dict:
         """

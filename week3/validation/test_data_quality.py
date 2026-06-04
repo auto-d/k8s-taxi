@@ -10,7 +10,7 @@ Write tests that:
 import pytest
 import pandas as pd
 import numpy as np
-from validation.check_data_quality import load_data, print_issues, filter_issues, DataQualityValidator
+from week3.validation.check_data_quality import load_data, print_issues, filter_issues, DataQualityValidator
 
 @pytest.fixture
 def baseline_data():
@@ -78,7 +78,7 @@ class TestGracefulDegradation:
         """API should continue running even with corrupted data."""
         # All import and setup logic happens at the module scope, so we import
         # here to ensure logs happen in the context of the test
-        from backend.data import forecast_demand
+        from week3.backend.data import forecast_demand
 
         print("Running demand forecast")
         demand = forecast_demand(zone_id=132, hour=3, dow=5, num_steps=4)
@@ -86,7 +86,7 @@ class TestGracefulDegradation:
 
     def test_fallback_is_logged(self, corrupted_data):
         """When graceful degradation happens, it should be logged."""
-        from backend.data import get_heatmap
+        from week3.backend.data import get_heatmap
         
         # Because the above import brings the associated module in, and the 
         # implementation has the data quality running globally, the data check 

@@ -98,7 +98,7 @@ FEATURES = [
 ]
 
 import logging
-from validation.check_data_quality import DataQualityValidator, load_data
+from week3.validation.check_data_quality import DataQualityValidator, load_data
 
 logger = logging.getLogger(__name__)
 validator = None 

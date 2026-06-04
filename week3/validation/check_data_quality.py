@@ -144,7 +144,7 @@ def load_data():
     (corrupted) rows to demonstrate how validation would work on a 
     schedule (or on a commit hook) for arriving data. 
     """
-    path = "data/demand_enriched_corrupted.parquet"
+    path = "week3/data/demand_enriched_corrupted.parquet"
     CUTOFF = pd.Timestamp("2026-01-16")
 
     df = pd.read_parquet(path)

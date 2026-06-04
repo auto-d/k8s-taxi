@@ -8,17 +8,27 @@ Implements metric computation
 import sys
 import pandas as pd 
 from scipy.stats import ks_2samp
-from metric_template import MetricComputer
+from week4.scripts.metric_template import MetricComputer
+from week3.backend.data import forecast_demand
+
 import json
 
 def load_data(): 
     """
     Load our baseline and newly arrived data 
     """
-    baseline = pd.read_parquet("data/demand_enriched_baseline.parquet")
-    new_data = pd.read_parquet("data/demand_enriched_week4.parquet")
 
-    return baseline, new_data
+    print("Loading datasets...")
+    baseline = pd.read_parquet("week4/data/demand_enriched_baseline.parquet")
+    new = pd.read_parquet("week4/data/demand_enriched_week4.parquet")
+
+    SAMPLE_HOURS = 12
+
+    latest = new["time_bucket"].max()
+    begin = latest - pd.Timedelta(hours=SAMPLE_HOURS)
+    print(f"Extracting last {SAMPLE_HOURS} hours ({begin} -> {latest})")
+
+    return baseline, new[new.time_bucket > begin].copy()
 
 def get_timestamp(): 
     """
@@ -40,10 +50,21 @@ def main():
     """
     CLI entrypoint for use w/ github actions (see validate-data.yml)
     """
+    print("Loading datasets...")
     baseline, new = load_data()
 
-    mc = MetricComputer(baseline)
-    
+    print("Running demand forecast...")
+    #TODO: forecast demand using buckets with, i presume, the trip_count as the ground_truth
+    for row in new: 
+        
+        print(row )
+        
+        # Steps default to 4 and that's what our dataset reports in 
+        demand = forecast_demand(zone_id=row.service_zone_id, hour=row.hour, dow=row.dayofweek)        
+        print(demand) 
+        sys.exit(1)
+
+    mc = MetricComputer(baseline)    
     metrics = mc.compute_all_metrics(new_df = new)
     print(metrics)
     write_metrics(metrics)
