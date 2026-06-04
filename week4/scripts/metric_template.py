@@ -54,7 +54,11 @@ class MetricComputer:
         TODO: Implement. Use scipy.stats.ks_2samp to compare trip_count distribution.
         Return dict with statistic and p-value.
         """
-        return ks_2samp(self.baseline_df.trip_count, new_df.trip_count)
+        result = ks_2samp(self.baseline_df.trip_count, new_df.trip_count)
+        return {
+            "pvalue": result.pvalue, 
+            "statistic" : result.statistic
+        }
 
     def metric_5_psi(self, new_df: pd.DataFrame, bins: int = 10) -> float:
         """
@@ -100,9 +104,28 @@ class MetricComputer:
     ) -> dict:
         """
         Compute all metrics.
-
-        TODO: Call each metric method and return results dict.
         """
         results = {}
-        # TODO: Populate results
+
+        result = self.metric_1_accuracy(new_df, predictions, actuals)
+        results["accuracy"] = result 
+
+        result = self.metric_2_accuracy_by_zone(new_df, predictions, actuals)
+        results["accuracy_by_zonee"] = result 
+
+        result = self.metric_3_null_rates(new_df)
+        results["null_rates"] = result 
+
+        result = self.metric_4_ks_test(new_df)
+        results["ks-test"] = result
+
+        result = self.metric_5_psi(new_df)
+        results["psi"] = result 
+
+        result = self.metric_6_prediction_distribution(predictions)
+        results["prediction_distribution"] = result 
+
+        result = self.metric_7_data_freshness(new_df)
+        results["data_freshness"] = result 
+
         return results

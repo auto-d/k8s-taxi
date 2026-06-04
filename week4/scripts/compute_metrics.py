@@ -43,16 +43,8 @@ def main():
     baseline, new = load_data()
 
     mc = MetricComputer(baseline)
-
-    metrics = {}
-
-    # Kolmogorov-Smirnov test 
-    result = mc.metric_4_ks_test(new)
-    metrics["ks-test"] = {
-        "pvalue": result.pvalue, 
-        "statistic" : result.statistic
-    }
     
+    metrics = mc.compute_all_metrics(new_df = new)
     print(metrics)
     write_metrics(metrics)
 
