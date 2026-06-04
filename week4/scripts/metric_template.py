@@ -54,7 +54,7 @@ class MetricComputer:
         TODO: Implement. Use scipy.stats.ks_2samp to compare trip_count distribution.
         Return dict with statistic and p-value.
         """
-        pass
+        return ks_2samp(self.baseline_df.trip_count, new_df.trip_count)
 
     def metric_5_psi(self, new_df: pd.DataFrame, bins: int = 10) -> float:
         """
