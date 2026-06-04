@@ -10,7 +10,7 @@ and return a dict (or float) that can be checked against your alert thresholds.
 import pandas as pd
 import numpy as np
 from scipy.stats import ks_2samp
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_absolute_error
 
 
 class MetricComputer:
@@ -20,19 +20,19 @@ class MetricComputer:
         """Initialize with baseline data."""
         self.baseline_df = baseline_df
 
-    def metric_1_accuracy(
+    def metric_1_mae(
         self, new_df: pd.DataFrame, predictions: np.ndarray, actuals: np.ndarray
     ) -> float:
         """
-        Metric 1: Overall Accuracy
+        Metric 1: Overall error
         """
-        return accuracy_score(actuals, predictions) 
+        return mean_absolute_error(actuals, predictions) 
 
-    def metric_2_accuracy_by_zone(
+    def metric_2_mae_by_zone(
         self, new_df: pd.DataFrame, predictions: np.ndarray, actuals: np.ndarray
     ) -> dict:
         """
-        Metric 2: Accuracy by Zone
+        Metric 2: Error by Zone
         """
         result = { }
 
@@ -42,7 +42,7 @@ class MetricComputer:
 
         for zone in df.PULocationID.unique(): 
             zone_df = df[df.PULocationID == zone]
-            result[str(zone)] = accuracy_score(zone_df.actuals, zone_df.predictions)
+            result[str(zone)] = mean_absolute_error(zone_df.actuals, zone_df.predictions)
 
         return result
 
@@ -52,7 +52,7 @@ class MetricComputer:
 
         TODO: Implement. Return dict of field -> null_rate for critical columns.
         """
-        rates = new_df.is_na().mean()
+        rates = new_df.isna().mean()
         results = {}
         for rate in rates.items(): 
             results[rate[0]] = rate[1]
@@ -88,7 +88,13 @@ class MetricComputer:
         TODO: Implement. Check if model is collapsed (std very small).
         Return dict with mean, std, collapsed flag.
         """
-        pass
+        mean = np.mean(predictions)   
+        std = np.std(predictions)
+        return { 
+            "mean" : mean, 
+            "stdev" : std, 
+            "collapsed" : True if self.baseline_df.trip_count.std() * 0.1 > std else False
+        }
 
     def metric_7_data_freshness(self, new_df: pd.DataFrame) -> dict:
         """
@@ -106,8 +112,13 @@ class MetricComputer:
         TODO: Implement. Check fraction of rows that are exact duplicates.
         Return dict with rate and count.
         """
-        pass
-
+                
+        duplicated_rows = new_df.duplicated().sum()
+        return { 
+            "duplicate_rate" : duplicated_rows/len(new_df), 
+            "duplicate_count" : duplicated_rows
+            }
+        
     def compute_all_metrics(
         self,
         new_df: pd.DataFrame,
@@ -119,11 +130,11 @@ class MetricComputer:
         """
         results = {}
 
-        result = self.metric_1_accuracy(new_df, predictions, actuals)
+        result = self.metric_1_mae(new_df, predictions, actuals)
         results["accuracy"] = result 
 
-        result = self.metric_2_accuracy_by_zone(new_df, predictions, actuals)
-        results["accuracy_by_zonee"] = result 
+        result = self.metric_2_mae_by_zone(new_df, predictions, actuals)
+        results["accuracy_by_zone"] = result 
 
         result = self.metric_3_null_rates(new_df)
         results["null_rates"] = result 
