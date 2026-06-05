@@ -28,18 +28,12 @@ jobs:
       - name: Compute monitoring metrics
         id: metrics
         run: |
-          #cd week4
-          python3 week4/scripts/compute_metrics.py
+          python -m week4.scripts.compute_metrics
 
       - name: Detect drift patterns
         id: drift
         run: |
-          cd week4
-          # TODO: Implement drift detection
-          # - Run statistical tests (KS, PSI, chi-square)
-          # - Identify 4+ drift patterns
-          # - Document evidence for each pattern
-          #python3 scripts/detect_drift.py
+          python -m week4.scripts.detect_drift
 
       - name: Upload metrics
         if: always()
