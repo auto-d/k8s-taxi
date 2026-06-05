@@ -1,6 +1,6 @@
 # Overview
 
-This repository contains a cloned and modified `week3` tree from the [class repository](https://github.com/AIPI-561-Operationalizing-AI/Ops-AI-Student/tree/main/week3). It also contains necesary dependencies from the prior assignment in `week2`.
+This repository contains a cloned and modified `week4` tree from the [class repository](https://github.com/AIPI-561-Operationalizing-AI/Ops-AI-Student/tree/main/week3). It also contains necesary dependencies from the prior assignments in `week2` and `week3`.
 
 # Deliverables
 
