@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pandas pyarrow numpy scipy scikit-learn
+          pip install pandas pyarrow numpy scipy scikit-learn lightgbm
 
       - name: Compute monitoring metrics
         id: metrics

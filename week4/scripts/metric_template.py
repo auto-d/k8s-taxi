@@ -70,7 +70,7 @@ class MetricComputer:
         return {
             "pvalue": result.pvalue, 
             "statistic" : result.statistic
-        }
+        } 
 
     def metric_5_psi(self, new_df: pd.DataFrame, bins: int = 10) -> float:
         """
