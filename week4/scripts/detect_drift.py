@@ -71,7 +71,7 @@ def detect_concept_drift_by_segment(baseline_df: pd.DataFrame, new_df: pd.DataFr
             raise ValueError("Mismatched ordinals, can't generate ordinal-based errors")
 
         # Record the errors for each ordinal value
-        segment_drift = True if new_row[1].error > baseline_row[1].error else False
+        segment_drift = True if new_row[1].error > baseline_row[1].error * 1.5 else False
         error[int(loc)] = { 
             "baseline": baseline_row[1].error, 
             "new": new_row[1].error,
@@ -81,6 +81,65 @@ def detect_concept_drift_by_segment(baseline_df: pd.DataFrame, new_df: pd.DataFr
         drift = drift or segment_drift
 
     return drift, error
+
+def print_drift_report(result: dict, max_segments: int = 10):
+    """
+    AI-sourced pretty printer for drift reporting
+    NOTE: chatGPT-5.5 w/ medium reasoning, prompt: 
+     > I'm dumping errors as an object to stdout... sort of messy. Here's what it looks like. Can 
+     > you give me a pretty-print function? {'weekend_drift': [...]
+    """
+    print("\n" + "=" * 72)
+    print("DRIFT DETECTION REPORT")
+    print("=" * 72)
+
+    for section, value in result.items():
+        title = section.replace("_", " ").title()
+        print(f"\n{title}")
+        print("-" * len(title))
+
+        # Feature-level drift: pvalue/statistic/drift_detected
+        if isinstance(value, dict) and "pvalue" in value:
+            pvalue = float(value["pvalue"])
+            statistic = float(value["statistic"])
+            drift = bool(value["drift_detected"])
+
+            print(f"Drift detected : {drift}")
+            print(f"KS statistic   : {statistic:.4f}")
+            print(f"p-value        : {pvalue:.3e}")
+            continue
+
+        # Segment-level drift: {segment: {baseline, new, drift_detected}}
+        if isinstance(value, dict):
+            rows = []
+            for segment, metrics in value.items():
+                baseline = float(metrics["baseline"])
+                new = float(metrics["new"])
+                delta = new - baseline
+                ratio = new / baseline if baseline else float("inf")
+                drift = bool(metrics["drift_detected"])
+
+                rows.append((drift, abs(delta), segment, baseline, new, delta, ratio))
+
+            rows.sort(reverse=True)
+
+            drift_count = sum(1 for row in rows if row[0])
+            print(f"Segments checked: {len(rows)}")
+            print(f"Segments drifted: {drift_count}")
+            print()
+            print(f"{'segment':>8} {'base_mae':>10} {'new_mae':>10} {'delta':>10} {'ratio':>8} {'drift':>7}")
+            print("-" * 62)
+
+            for drift, _, segment, baseline, new, delta, ratio in rows[:max_segments]:
+                ratio_text = "inf" if ratio == float("inf") else f"{ratio:.2f}"
+                print(
+                    f"{str(segment):>8} "
+                    f"{baseline:>10.2f} "
+                    f"{new:>10.2f} "
+                    f"{delta:>10.2f} "
+                    f"{ratio_text:>8} "
+                    f"{str(drift):>7}"
+                )
 
 
 def main():
@@ -105,7 +164,7 @@ def main():
         "loc_drift": loc_segment_results
     }
 
-    print(result)
+    print_drift_report(result)
 
     return 1 if drift else 0
 
