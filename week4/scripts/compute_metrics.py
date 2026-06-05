@@ -16,7 +16,7 @@ def load_data():
     """
     Load our baseline and newly arrived data 
     """
-
+ 
     print("Loading datasets...")
     baseline = pd.read_parquet("week4/data/demand_enriched_baseline.parquet")
     new = pd.read_parquet("week4/data/demand_enriched_week4.parquet")
