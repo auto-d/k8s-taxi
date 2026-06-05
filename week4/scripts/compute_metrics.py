@@ -21,7 +21,7 @@ def load_data():
     baseline = pd.read_parquet("week4/data/demand_enriched_baseline.parquet")
     new = pd.read_parquet("week4/data/demand_enriched_week4.parquet")
 
-    SAMPLE_HOURS = 12
+    SAMPLE_HOURS = 24
 
     latest = new["time_bucket"].max()
     begin = latest - pd.Timedelta(hours=SAMPLE_HOURS)

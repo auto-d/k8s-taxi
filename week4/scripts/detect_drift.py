@@ -9,8 +9,7 @@ import sys
 import pandas as pd
 import numpy as np
 from scipy.stats import ks_2samp
-from sklearn.metrics import accuracy_score, mean_absolute_error
-from metric_template import MetricComputer, predict_demand, load_data
+from .compute_metrics import predict_demand, load_data
 
 def detect_feature_drift(baseline_df: pd.DataFrame, new_df: pd.DataFrame, feature: str):
     """
@@ -18,7 +17,7 @@ def detect_feature_drift(baseline_df: pd.DataFrame, new_df: pd.DataFrame, featur
     """
     result = ks_2samp(baseline_df[feature], new_df[feature])
     
-    drift = True if result['statistic'] > 0.1 else False
+    drift = True if result.statistic > 0.1 else False
     return drift, {
         "pvalue": result.pvalue, 
         "statistic" : result.statistic, 
@@ -31,12 +30,12 @@ def error_by_ordinal(df, col='PULocationID', n=1000):
     Calculate the error for a specific ordinal value, based on provided number of samples 
     per ordinal value 
     """    
-    # Group and sample to achieve stratified sampling by the provided column 
+    # Group and sample (if indicated) to achieve stratified sampling by the provided column 
     groups = df.groupby(col)
-    df_sample = groups.sample(n=n)
+    df_sample = df if n is None else groups.sample(n=n)
 
     # Predict on our smaller dataset 
-    preds = predict_demand(df)
+    preds = predict_demand(df_sample)
 
     # Dump all but essential columns
     df_sample_small = df_sample[[col, 'trip_count']].copy()
@@ -58,7 +57,7 @@ def detect_concept_drift_by_segment(baseline_df: pd.DataFrame, new_df: pd.DataFr
 
     # Decompose model performance by location ordinals
     baseline_error = error_by_ordinal(baseline_df, col=feature)    
-    new_error = error_by_ordinal(new_df, col=feature)
+    new_error = error_by_ordinal(new_df, col=feature, n=None)
     
     baseline_it = baseline_error.reset_index(0).iterrows()
     new_it = new_error.reset_index(0).iterrows()
@@ -66,8 +65,11 @@ def detect_concept_drift_by_segment(baseline_df: pd.DataFrame, new_df: pd.DataFr
     error = {}
     for baseline_row, new_row in zip(baseline_it, new_it):             
 
+        print(baseline_row[1][feature], new_row[1][feature])
+
         loc = baseline_row[1][feature]
-        if loc != new_row[1][feature]: 
+        if loc != new_row[1][feature]:             
+            print(new_error.describe())
             raise ValueError("Mismatched ordinals, can't generate ordinal-based errors")
 
         # Record the errors for each ordinal value
