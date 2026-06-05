@@ -64,9 +64,7 @@ def detect_concept_drift_by_segment(baseline_df: pd.DataFrame, new_df: pd.DataFr
 
     error = {}
     for baseline_row, new_row in zip(baseline_it, new_it):             
-
-        print(baseline_row[1][feature], new_row[1][feature])
-
+        
         loc = baseline_row[1][feature]
         if loc != new_row[1][feature]:             
             print(new_error.describe())
